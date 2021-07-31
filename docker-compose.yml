@@ -1,0 +1,14 @@
+version: '3.7'
+services:
+  app:
+    build:
+      context: .
+    image: rtlsdr/discord-audio-repeater:latest
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?undefined}
+      DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?undefined}
+      DISCORD_CHANNEL_ID: ${DISCORD_CHANNEL_ID:?undefined}
+      AUDIO_FILE_PATH: ${AUDIO_FILE_PATH:?undefined}
+    volumes:
+      - .:/go/src/app
+    restart: unless-stopped
