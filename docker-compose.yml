@@ -8,6 +8,7 @@ services:
       DISCORD_TOKEN: ${DISCORD_TOKEN:?undefined}
       DISCORD_GUILD_ID: ${DISCORD_GUILD_ID:?undefined}
       DISCORD_CHANNEL_ID: ${DISCORD_CHANNEL_ID:?undefined}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL}
       AUDIO_FILE_PATH: ${AUDIO_FILE_PATH:?undefined}
     volumes:
       - .:/go/src/app

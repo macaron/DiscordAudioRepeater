@@ -1,20 +1,24 @@
 package main
 
 import (
+	"bytes"
+	json2 "encoding/json"
 	"flag"
 	"fmt"
 	"github.com/bwmarrin/dgvoice"
 	"github.com/bwmarrin/discordgo"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
 var (
-	token string
-	gID   string
-	cID   string
-	audioFilePath string
+	token          string
+	gID            string
+	cID            string
+	audioFilePath  string
+	discordWebhook string
 )
 
 func main() {
@@ -27,6 +31,7 @@ func main() {
 	flag.StringVar(&gID, "g", os.Getenv("DISCORD_GUILD_ID"), "Guild ID of the channel to join")
 	flag.StringVar(&cID, "c", os.Getenv("DISCORD_CHANNEL_ID"), "Channel ID of the channel to join")
 	flag.StringVar(&audioFilePath, "p", os.Getenv("AUDIO_FILE_PATH"), "Specific Audio file path or URL")
+	flag.StringVar(&discordWebhook, "w", os.Getenv("DISCORD_WEBHOOK_URL"), "Specific Discord webhook")
 	flag.Parse()
 	if isEmptyFlag() {
 		os.Exit(1)
@@ -51,12 +56,13 @@ func main() {
 		fmt.Println("failed to join voice channel: ", err)
 		return
 	}
-	fmt.Println("[INFO] joined voice channel")
+	throwWebhook("[INFO] joined voice channel")
 
 	stop := make(chan bool)
 	go func() {
 		sig := <-sigs
-		fmt.Printf("SIGNAL %d received, then application exit\n", sig)
+		exitReason := fmt.Sprintf("[INFO] SIGNAL %d received, then application exit\n", sig)
+		throwWebhook(exitReason)
 		stop <- true
 	}()
 
@@ -78,4 +84,32 @@ func isEmptyFlag() bool {
 		return true
 	}
 	return false
+}
+
+func throwWebhook(content string) {
+	fmt.Println(content)
+
+	if discordWebhook == "" {
+		return
+	}
+
+	type BodyJson struct {
+		Content string `json:"content"`
+	}
+	json, _ := json2.Marshal(&BodyJson{Content: content})
+
+	req, _ := http.NewRequest("POST", discordWebhook, bytes.NewBuffer(json))
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != 204 {
+		fmt.Println("[ERROR] failed to send webhook")
+	}
 }
